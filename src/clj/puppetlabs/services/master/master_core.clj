@@ -318,6 +318,11 @@
               (rr/content-type "application/json"))))
       (middleware-utils/json-response 200 info-for-json))))
 
+(defn environment-not-found
+  "Ring handler to provide a standard error when an environment is not found."
+  [environment]
+  (rr/not-found (i18n/tru "Could not find environment ''{0}''" environment)))
+
 (schema/defn ^:always-validate
   environment-class-info-fn :- IFn
   "Middleware function for constructing a Ring response from an incoming
@@ -341,7 +346,7 @@
                                      (if-none-match-from-request request)
                                      cache-generation-id
                                      environment-class-cache-enabled)
-        (rr/not-found (i18n/tru "Could not find environment ''{0}''" environment))))))
+        (environment-not-found)))))
 
 (schema/defn ^:always-validate
   module-info-from-jruby->module-info-for-json  :- EnvironmentModulesInfo
