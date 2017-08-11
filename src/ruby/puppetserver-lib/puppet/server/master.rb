@@ -130,4 +130,12 @@ class Puppet::Server::Master
     module_manifests = env.modules.collect {|mod| mod.all_manifests}
     manifests.concat(module_manifests).flatten.uniq
   end
+
+  def self.getTasks(env)
+    environment = @env_loader.get(env)
+    unless environment.nil?
+      tasks_per_env =
+        Puppet::InfoService.tasks_per_environment(environment.name)
+    end
+  end
 end
