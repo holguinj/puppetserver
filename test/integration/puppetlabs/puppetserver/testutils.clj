@@ -5,7 +5,8 @@
             [cheshire.core :as json]
             [puppetlabs.http.client.sync :as http-client]
             [puppetlabs.kitchensink.core :as ks]
-            [puppetlabs.puppetserver.ringutils :as ringutils])
+            [puppetlabs.puppetserver.ringutils :as ringutils]
+            [clojure.string :as str])
   (:import (java.io File)
            (java.net URL)))
 
@@ -125,6 +126,29 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Interacting with puppet code and catalogs
 
+(schema/defn ^:always-validate create-module :- schema/Str
+  [module-name :- schema/Str
+   options :- {(schema/optional-key :env-name) schema/Str
+               (schema/optional-key :module-version) schema/Str}]
+  (let [default-options {:env-name "production"
+                         :module-version "1.0.0"}
+        options (merge default-options options)
+        module-dir (fs/file conf-dir
+                             "environments"
+                             (:env-name options)
+                             "modules"
+                             module-name)
+         metadata-json {"name" module-name
+                        "version" (:module-version options)
+                        "author" "Puppet"
+                        "license" "apache"
+                        "dependencies" []
+                        "source" "https://github.com/puppetlabs"}]
+     (fs/mkdirs module-dir)
+     (spit (fs/file module-dir "metadata.json")
+           (json/generate-string metadata-json))
+     (.getCanonicalPath module-dir)))
+
 (schema/defn ^:always-validate write-pp-file :- schema/Str
   ([pp-contents :- schema/Str
     module-name :- schema/Str]
@@ -155,31 +179,20 @@
      (spit pp-file pp-contents)
      (.getCanonicalPath pp-file))))
 
-(schema/defn ^:always-validate create-module :- schema/Str
-  [module-name :- schema/Str
-   options :- {:env-name schema/Str
-                :module-version schema/Str}]
-   (let [module-dir (fs/file conf-dir
-                             "environments"
-                             env-name
-                             "modules"
-                             module-name)
-         metadata-json {"name" module-name
-                        "version" module-version
-                        "author" "Puppet"
-                        "license" "apache"
-                        "dependencies" []
-                        "source" "https://github.com/puppetlabs"}]
-     (fs/mkdirs module-dir)
-     (spit (fs/file module-dir "metadata.json")
-           (json/generate-string metadata-json))
-     (.getCanonicalPath module-dir)))
-
 (schema/defn ^:always-validate write-foo-pp-file :- schema/Str
   [foo-pp-contents]
   (write-pp-file foo-pp-contents "foo"))
 
-(schema/defn ^:always-validate write-tasks-files :- schema/Str
+(schema/defn ^:always-validate write-tasks-file :- schema/Str
+  [module-name :- schema/Str
+   task-name :- schema/Str
+   task-file-contents :- schema/Str]
+  (let [metadata-file-path (str task-name ".json")
+        metadata-contents {"defaultFile" task-name}
+        base-path () ;; TODO pick up here
+        ]
+    (create-file (fs/file env-dir ))
+    ))
 
 (defn create-env-conf
   [env-dir content]
